@@ -44,7 +44,54 @@ export const ComparisonMatrix: React.FC = () => {
   const [aiVerdict, setAiVerdict] = useState<string | null>(null);
   const [isGeneratingAi, setIsGeneratingAi] = useState<boolean>(false);
 
-  if (!isComparisonMatrixOpen || comparedItems.length === 0) return null;
+  // Print Mode State & Body Class Management
+  const [isPrintMode, setIsPrintMode] = useState(false);
+
+  useEffect(() => {
+    if (isComparisonMatrixOpen && comparedItems.length > 0) {
+      document.body.classList.add('comparison-matrix-open');
+    } else {
+      document.body.classList.remove('comparison-matrix-open');
+    }
+    return () => {
+      document.body.classList.remove('comparison-matrix-open');
+    };
+  }, [isComparisonMatrixOpen, comparedItems.length]);
+
+  useEffect(() => {
+    const handleBeforePrint = () => setIsPrintMode(true);
+    const handleAfterPrint = () => setIsPrintMode(false);
+    window.addEventListener('beforeprint', handleBeforePrint);
+    window.addEventListener('afterprint', handleAfterPrint);
+    return () => {
+      window.removeEventListener('beforeprint', handleBeforePrint);
+      window.removeEventListener('afterprint', handleAfterPrint);
+    };
+  }, []);
+
+  if (!isComparisonMatrixOpen) return null;
+
+  if (comparedItems.length === 0) {
+    return (
+      <div className="comparison-matrix-overlay fixed inset-0 z-50 overflow-y-auto bg-stone-900/70 backdrop-blur-md flex items-center justify-center p-4 animate-fadeIn">
+        <div className="bg-[#FAF8F5] max-w-md w-full p-6 rounded-2xl hairline-border shadow-2xl text-center space-y-4">
+          <div className="w-12 h-12 mx-auto rounded-full bg-stone-100 flex items-center justify-center text-stone-500">
+            <Scale className="w-6 h-6" />
+          </div>
+          <h3 className="font-editorial text-xl font-bold text-stone-900">Comparison Dock is Empty</h3>
+          <p className="text-xs text-stone-600 leading-relaxed">
+            Please add at least 2 ingredients from the pantry grid to compare nutrition, smoke points, and lab transparency side-by-side.
+          </p>
+          <button
+            onClick={() => setIsComparisonMatrixOpen(false)}
+            className="w-full py-2.5 px-4 rounded-xl bg-[#2D5A27] text-white text-xs font-semibold hover:bg-emerald-700 transition-colors shadow-sm"
+          >
+            Browse Ingredients
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const verdict = computeComparisonVerdict(comparedItems, customPrices);
 
@@ -72,8 +119,8 @@ export const ComparisonMatrix: React.FC = () => {
   };
 
   // Safe indexes for mobile 2-column view
-  const safeSlotA = Math.min(mobileSlotA, comparedItems.length - 1);
-  const safeSlotB = Math.min(Math.max(mobileSlotB, 0), comparedItems.length - 1);
+  const safeSlotA = Math.min(mobileSlotA, Math.max(0, comparedItems.length - 1));
+  const safeSlotB = Math.min(Math.max(mobileSlotB, 0), Math.max(0, comparedItems.length - 1));
   const effectiveSlotB =
     safeSlotB === safeSlotA && comparedItems.length > 1
       ? safeSlotA === 0
@@ -86,31 +133,6 @@ export const ComparisonMatrix: React.FC = () => {
       ? comparedItems
       : [comparedItems[safeSlotA], comparedItems[effectiveSlotB]];
 
-  // Print Mode State & Body Class Management
-  const [isPrintMode, setIsPrintMode] = useState(false);
-
-  useEffect(() => {
-    if (isComparisonMatrixOpen) {
-      document.body.classList.add('comparison-matrix-open');
-    } else {
-      document.body.classList.remove('comparison-matrix-open');
-    }
-    return () => {
-      document.body.classList.remove('comparison-matrix-open');
-    };
-  }, [isComparisonMatrixOpen]);
-
-  useEffect(() => {
-    const handleBeforePrint = () => setIsPrintMode(true);
-    const handleAfterPrint = () => setIsPrintMode(false);
-    window.addEventListener('beforeprint', handleBeforePrint);
-    window.addEventListener('afterprint', handleAfterPrint);
-    return () => {
-      window.removeEventListener('beforeprint', handleBeforePrint);
-      window.removeEventListener('afterprint', handleAfterPrint);
-    };
-  }, []);
-
   const handlePrint = () => {
     setIsPrintMode(true);
     document.body.classList.add('comparison-matrix-open');
@@ -120,7 +142,7 @@ export const ComparisonMatrix: React.FC = () => {
   };
 
   const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 1024;
-  const tableItems = isPrintMode || isDesktop ? comparedItems : mobileItems;
+  const tableItems = (isPrintMode || isDesktop ? comparedItems : mobileItems).filter(Boolean);
 
   return (
     <div className="comparison-matrix-overlay fixed inset-0 z-50 overflow-y-auto bg-stone-900/70 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 lg:p-6 animate-fadeIn">
@@ -312,7 +334,7 @@ export const ComparisonMatrix: React.FC = () => {
                     Culinary Metric
                   </th>
                   {tableItems.map(item => {
-                    const price = customPrices[item.id] || item.basePrice;
+                    const price = customPrices?.[item.id] || item.basePrice;
                     const norm = getNormalizedPrice(item);
                     return (
                       <th key={item.id} scope="col" className="p-4 print:p-2 align-top hairline-l">
@@ -350,7 +372,7 @@ export const ComparisonMatrix: React.FC = () => {
                           <div className="p-2 print:p-1 bg-stone-100 rounded text-center font-tabular">
                             <span className="text-[10px] print:text-[8.5px] text-stone-500 block">True Unit Cost</span>
                             <span className="font-bold text-stone-900 text-xs print:text-[10px]">
-                              {price.currency}{norm.costPer100.toFixed(1)} / {norm.displayUnit}
+                              {price?.currency || '₹'}{(norm?.costPer100 ?? 0).toFixed(1)} / {norm?.displayUnit || '100g'}
                             </span>
                           </div>
                         </div>
@@ -370,12 +392,12 @@ export const ComparisonMatrix: React.FC = () => {
                   {tableItems.map(item => (
                     <td key={item.id} className="p-4 hairline-l">
                       <span className="font-medium text-stone-900 block mb-0.5">
-                        {item.extractionMethod}
+                        {item.extractionMethod || 'Traditional'}
                       </span>
                       <span className="text-[11px] text-stone-500 block leading-relaxed">
-                        {item.extractionMethod.includes('Cold')
+                        {item.extractionMethod?.includes('Cold')
                           ? 'Zero hexane, mechanical extraction under 50°C'
-                          : item.extractionMethod.includes('Solvent')
+                          : item.extractionMethod?.includes('Solvent')
                           ? 'Chemical solvent extracted & deodorized'
                           : 'Traditional processing'}
                       </span>
@@ -429,7 +451,7 @@ export const ComparisonMatrix: React.FC = () => {
                     <td key={item.id} className="p-4 hairline-l">
                       <NutrientBar
                         label="Energy"
-                        value={item.nutriments.calories}
+                        value={item.nutriments?.calories ?? 0}
                         unit="kcal"
                         maxBenchmark={900}
                         color="bg-amber-600"
@@ -447,18 +469,18 @@ export const ComparisonMatrix: React.FC = () => {
                     <td key={item.id} className="p-4 hairline-l space-y-2">
                       <NutrientBar
                         label="Total Fat"
-                        value={item.nutriments.totalFat}
+                        value={item.nutriments?.totalFat ?? 0}
                         unit="g"
                         maxBenchmark={100}
                         color="bg-stone-700"
                       />
                       <NutrientBar
                         label="Saturated Fat"
-                        value={item.nutriments.saturatedFat}
+                        value={item.nutriments?.saturatedFat ?? 0}
                         unit="g"
                         maxBenchmark={100}
-                        color={item.nutriments.saturatedFat > 25 ? 'bg-terracotta' : 'bg-emerald-700'}
-                        note={item.nutriments.saturatedFat > 25 ? 'High' : 'Healthy'}
+                        color={(item.nutriments?.saturatedFat ?? 0) > 25 ? 'bg-terracotta' : 'bg-emerald-700'}
+                        note={(item.nutriments?.saturatedFat ?? 0) > 25 ? 'High' : 'Healthy'}
                       />
                     </td>
                   ))}
@@ -473,7 +495,7 @@ export const ComparisonMatrix: React.FC = () => {
                     <td key={item.id} className="p-4 hairline-l">
                       <NutrientBar
                         label="Protein"
-                        value={item.nutriments.protein}
+                        value={item.nutriments?.protein ?? 0}
                         unit="g"
                         maxBenchmark={30}
                         color="bg-[#2D5A27]"
@@ -491,12 +513,12 @@ export const ComparisonMatrix: React.FC = () => {
                     <td key={item.id} className="p-4 hairline-l space-y-1">
                       <div className="flex justify-between font-tabular text-[11px]">
                         <span className="text-stone-500">Fiber:</span>
-                        <span className="font-semibold">{item.nutriments.fiber}g</span>
+                        <span className="font-semibold">{item.nutriments?.fiber ?? 0}g</span>
                       </div>
                       <div className="flex justify-between font-tabular text-[11px]">
                         <span className="text-stone-500">Sugars:</span>
-                        <span className={`font-semibold ${item.nutriments.sugars > 20 ? 'text-amber-700' : ''}`}>
-                          {item.nutriments.sugars}g
+                        <span className={`font-semibold ${(item.nutriments?.sugars ?? 0) > 20 ? 'text-amber-700' : ''}`}>
+                          {item.nutriments?.sugars ?? 0}g
                         </span>
                       </div>
                     </td>
@@ -511,9 +533,9 @@ export const ComparisonMatrix: React.FC = () => {
                   {tableItems.map(item => (
                     <td key={item.id} className="p-4 hairline-l">
                       <p className="text-[11px] text-stone-700 leading-relaxed mb-2">
-                        {item.ingredientsText}
+                        {item.ingredientsText || 'Single ingredient staple'}
                       </p>
-                      {item.additives.length > 0 ? (
+                      {(item.additives || []).length > 0 ? (
                         <div className="space-y-1">
                           <span className="text-[10px] text-terracotta font-mono uppercase font-bold block">
                             Flagged Additives:

@@ -17,6 +17,7 @@ import { AuthModal } from './components/auth/AuthModal';
 import { Footer } from './components/layout/Footer';
 import { NotFoundView } from './components/common/NotFoundView';
 import { AppPreloader } from './components/AppPreloader';
+import { ErrorBoundary } from './components/common/ErrorBoundary';
 
 const AppContent: React.FC = () => {
   const { customPrices, comparedItems } = usePantry();
@@ -261,13 +262,15 @@ const AppContent: React.FC = () => {
 
 export const App: React.FC = () => {
   return (
-    <ToastProvider>
-      <AuthProvider>
-        <PantryProvider>
-          <AppContent />
-        </PantryProvider>
-      </AuthProvider>
-    </ToastProvider>
+    <ErrorBoundary>
+      <ToastProvider>
+        <AuthProvider>
+          <PantryProvider>
+            <AppContent />
+          </PantryProvider>
+        </AuthProvider>
+      </ToastProvider>
+    </ErrorBoundary>
   );
 };
 

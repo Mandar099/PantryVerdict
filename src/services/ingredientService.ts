@@ -256,84 +256,99 @@ export function computeComparisonVerdict(
   items: Ingredient[],
   customPrices: Record<string, BasePrice>
 ): ComparisonVerdict {
-  if (items.length === 0) {
+  if (!items || items.length === 0) {
     return { summary: 'Add ingredients to compare.', winners: [], suitabilityMap: {} };
   }
 
   const winners: ComparisonWinner[] = [];
   const suitabilityMap: Record<string, string> = {};
+  const defaultPrice: BasePrice = {
+    amount: 100,
+    currency: '₹',
+    unitQuantity: 1000,
+    unitType: 'g',
+  };
 
   // 1. Healthiest Fat (Lowest saturated fat among oils/fats OR highest fiber/lowest sugar)
   const isOilComparison = items.every(i => i.category === 'Cooking Oils' || i.category === 'Ghee & Butter');
   if (isOilComparison) {
-    const sortedBySatFat = [...items].sort((a, b) => a.nutriments.saturatedFat - b.nutriments.saturatedFat);
-    winners.push({
-      category: 'healthiest_fat',
-      title: 'Healthiest Fat Profile',
-      winnerIngredientId: sortedBySatFat[0].id,
-      reason: `Lowest saturated fat (${sortedBySatFat[0].nutriments.saturatedFat}g/100g) and highest healthy unsaturated ratio.`,
-    });
+    const sortedBySatFat = [...items].sort((a, b) => (a.nutriments?.saturatedFat ?? 0) - (b.nutriments?.saturatedFat ?? 0));
+    if (sortedBySatFat[0]) {
+      winners.push({
+        category: 'healthiest_fat',
+        title: 'Healthiest Fat Profile',
+        winnerIngredientId: sortedBySatFat[0].id,
+        reason: `Lowest saturated fat (${sortedBySatFat[0].nutriments?.saturatedFat ?? 0}g/100g) and highest healthy unsaturated ratio.`,
+      });
+    }
   } else {
     // Grain/Flour/Pulse Comparison: Highest Protein
-    const sortedByProtein = [...items].sort((a, b) => b.nutriments.protein - a.nutriments.protein);
-    if (sortedByProtein[0].nutriments.protein > 0) {
+    const sortedByProtein = [...items].sort((a, b) => (b.nutriments?.protein ?? 0) - (a.nutriments?.protein ?? 0));
+    if (sortedByProtein[0] && (sortedByProtein[0].nutriments?.protein ?? 0) > 0) {
       winners.push({
         category: 'highest_protein',
         title: 'Protein Champion',
         winnerIngredientId: sortedByProtein[0].id,
-        reason: `Highest protein density at ${sortedByProtein[0].nutriments.protein}g per 100g.`,
+        reason: `Highest protein density at ${sortedByProtein[0].nutriments?.protein ?? 0}g per 100g.`,
       });
     }
   }
 
   // 2. Highest Heat Stability (Smoke Point)
-  const withSmokePoint = items.filter(i => i.smokePoint && i.smokePoint.celsius > 0);
+  const withSmokePoint = items.filter(i => i.smokePoint && (i.smokePoint.celsius ?? 0) > 0);
   if (withSmokePoint.length > 0) {
     const sortedBySmoke = [...withSmokePoint].sort((a, b) => (b.smokePoint?.celsius || 0) - (a.smokePoint?.celsius || 0));
-    winners.push({
-      category: 'highest_smoke_point',
-      title: 'Highest Heat Stability',
-      winnerIngredientId: sortedBySmoke[0].id,
-      reason: `Superior smoke point of ${sortedBySmoke[0].smokePoint?.celsius}°C (${sortedBySmoke[0].smokePoint?.fahrenheit}°F). Best for ${sortedBySmoke[0].smokePoint?.recommendedUsage}.`,
-    });
+    if (sortedBySmoke[0]) {
+      winners.push({
+        category: 'highest_smoke_point',
+        title: 'Highest Heat Stability',
+        winnerIngredientId: sortedBySmoke[0].id,
+        reason: `Superior smoke point of ${sortedBySmoke[0].smokePoint?.celsius}°C (${sortedBySmoke[0].smokePoint?.fahrenheit}°F). Best for ${sortedBySmoke[0].smokePoint?.recommendedUsage || 'cooking'}.`,
+      });
+    }
   }
 
   // 3. Least Processed (NOVA Score)
-  const sortedByNova = [...items].sort((a, b) => a.novaGroup - b.novaGroup);
+  const sortedByNova = [...items].sort((a, b) => (a.novaGroup ?? 4) - (b.novaGroup ?? 4));
   const leastProcessed = sortedByNova[0];
-  winners.push({
-    category: 'least_processed',
-    title: 'Cleanest & Least Processed',
-    winnerIngredientId: leastProcessed.id,
-    reason: `NOVA Group ${leastProcessed.novaGroup} (${leastProcessed.extractionMethod}) with ${leastProcessed.additives.length === 0 ? 'zero synthetic additives' : 'minimal processing'}.`,
-  });
+  if (leastProcessed) {
+    winners.push({
+      category: 'least_processed',
+      title: 'Cleanest & Least Processed',
+      winnerIngredientId: leastProcessed.id,
+      reason: `NOVA Group ${leastProcessed.novaGroup || 1} (${leastProcessed.extractionMethod || 'Traditional'}) with ${(leastProcessed.additives || []).length === 0 ? 'zero synthetic additives' : 'minimal processing'}.`,
+    });
+  }
 
   // 4. Best Value per Unit
   const sortedByUnitCost = [...items].sort((a, b) => {
-    const priceA = customPrices[a.id] || a.basePrice;
-    const priceB = customPrices[b.id] || b.basePrice;
+    const priceA = customPrices?.[a.id] || a.basePrice || defaultPrice;
+    const priceB = customPrices?.[b.id] || b.basePrice || defaultPrice;
     const costA = (priceA.amount / (priceA.unitQuantity || 1)) * 100;
     const costB = (priceB.amount / (priceB.unitQuantity || 1)) * 100;
     return costA - costB;
   });
   const bestValue = sortedByUnitCost[0];
-  const bvPrice = customPrices[bestValue.id] || bestValue.basePrice;
-  const bvCost100 = (bvPrice.amount / (bvPrice.unitQuantity || 1)) * 100;
-  winners.push({
-    category: 'best_value_unit',
-    title: 'Best True Value',
-    winnerIngredientId: bestValue.id,
-    reason: `Lowest cost at ${bvPrice.currency}${bvCost100.toFixed(2)} per 100${bvPrice.unitType}.`,
-  });
+  if (bestValue) {
+    const bvPrice = customPrices?.[bestValue.id] || bestValue.basePrice || defaultPrice;
+    const bvCost100 = (bvPrice.amount / (bvPrice.unitQuantity || 1)) * 100;
+    winners.push({
+      category: 'best_value_unit',
+      title: 'Best True Value',
+      winnerIngredientId: bestValue.id,
+      reason: `Lowest cost at ${bvPrice.currency || '₹'}${bvCost100.toFixed(2)} per 100${bvPrice.unitType || 'g'}.`,
+    });
+  }
 
   // Build suitability map
   items.forEach(item => {
-    if (item.smokePoint && item.smokePoint.celsius >= 230) {
+    const protein = item.nutriments?.protein ?? 0;
+    if (item.smokePoint && (item.smokePoint.celsius ?? 0) >= 230) {
       suitabilityMap[item.id] = `Premier choice for high-heat frying, tadka, and intense sautéing (${item.smokePoint.celsius}°C).`;
-    } else if (item.smokePoint && item.smokePoint.celsius <= 190) {
+    } else if (item.smokePoint && (item.smokePoint.celsius ?? 0) <= 190) {
       suitabilityMap[item.id] = `Reserve for low-heat sautéing, salad finishing, and raw drizzling to avoid smoke degradation.`;
-    } else if (item.nutriments.protein >= 20) {
-      suitabilityMap[item.id] = `Outstanding high-protein staple (${item.nutriments.protein}g/100g) ideal for post-workout nutrition.`;
+    } else if (protein >= 20) {
+      suitabilityMap[item.id] = `Outstanding high-protein staple (${protein}g/100g) ideal for post-workout nutrition.`;
     } else if (item.cleanLabel) {
       suitabilityMap[item.id] = `Clean whole single-ingredient staple with no synthetic preservatives or anti-caking aids.`;
     } else {
@@ -341,7 +356,7 @@ export function computeComparisonVerdict(
     }
   });
 
-  const summary = `Compared ${items.length} staples. ${winners[0]?.title}: ${items.find(i => i.id === winners[0]?.winnerIngredientId)?.name}.`;
+  const summary = `Compared ${items.length} staples. ${winners[0]?.title}: ${items.find(i => i.id === winners[0]?.winnerIngredientId)?.name || 'Selected staple'}.`;
 
   return { summary, winners, suitabilityMap };
 }

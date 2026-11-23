@@ -110,34 +110,40 @@ export const PantryProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   };
 
   const getNormalizedPrice = (item: Ingredient): NormalizedPrice => {
-    const price = customPrices[item.id] || item.basePrice;
-    const qty = price.unitQuantity > 0 ? price.unitQuantity : 1;
-    const costPer100 = (price.amount / qty) * 100;
+    const defaultPrice: BasePrice = {
+      amount: 100,
+      currency: '₹',
+      unitQuantity: 1000,
+      unitType: 'g',
+    };
+    const price = customPrices?.[item.id] || item.basePrice || defaultPrice;
+    const qty = (price.unitQuantity && price.unitQuantity > 0) ? price.unitQuantity : 1;
+    const costPer100 = ((price.amount ?? 0) / qty) * 100;
 
     let costPerProtein10g: number | undefined;
-    if (item.nutriments.protein > 0) {
+    if (item.nutriments?.protein && item.nutriments.protein > 0) {
       // Grams of protein per unit
       const totalProtein = (qty / 100) * item.nutriments.protein;
       if (totalProtein > 0) {
-        costPerProtein10g = (price.amount / totalProtein) * 10;
+        costPerProtein10g = ((price.amount ?? 0) / totalProtein) * 10;
       }
     }
 
     let costPerHealthyFat10g: number | undefined;
-    if (item.nutriments.monounsaturatedFat && item.nutriments.monounsaturatedFat > 0) {
+    if (item.nutriments?.monounsaturatedFat && item.nutriments.monounsaturatedFat > 0) {
       const totalMufa = (qty / 100) * item.nutriments.monounsaturatedFat;
       if (totalMufa > 0) {
-        costPerHealthyFat10g = (price.amount / totalMufa) * 10;
+        costPerHealthyFat10g = ((price.amount ?? 0) / totalMufa) * 10;
       }
     }
 
     return {
-      costPer100,
+      costPer100: isNaN(costPer100) ? 0 : costPer100,
       costPerProtein10g,
       costPerHealthyFat10g,
-      displayUnit: `100${price.unitType}`,
-      rawAmount: price.amount,
-      rawQuantity: price.unitQuantity,
+      displayUnit: `100${price.unitType || 'g'}`,
+      rawAmount: price.amount ?? 0,
+      rawQuantity: price.unitQuantity ?? 1,
     };
   };
 

@@ -118,23 +118,23 @@ export function exportComparisonToCSV(ingredients: Ingredient[], customPrices: R
     ['NOVA Processing Group', ...ingredients.map(i => `Group ${i.novaGroup}`)],
     ['Smoke Point (°C)', ...ingredients.map(i => i.smokePoint ? `${i.smokePoint.celsius}°C (${i.smokePoint.fahrenheit}°F)` : 'N/A')],
     ['Ideal Cooking Usage', ...ingredients.map(i => i.smokePoint?.recommendedUsage || 'General Cooking')],
-    ['Calories (kcal / 100g/ml)', ...ingredients.map(i => i.nutriments.calories.toString())],
-    ['Total Fat (g)', ...ingredients.map(i => i.nutriments.totalFat.toString())],
-    ['Saturated Fat (g)', ...ingredients.map(i => i.nutriments.saturatedFat.toString())],
-    ['Monounsaturated Fat (g)', ...ingredients.map(i => (i.nutriments.monounsaturatedFat ?? 'N/A').toString())],
-    ['Polyunsaturated Fat (g)', ...ingredients.map(i => (i.nutriments.polyunsaturatedFat ?? 'N/A').toString())],
-    ['Protein (g)', ...ingredients.map(i => i.nutriments.protein.toString())],
-    ['Fiber (g)', ...ingredients.map(i => i.nutriments.fiber.toString())],
-    ['Sodium (mg)', ...ingredients.map(i => i.nutriments.sodium.toString())],
-    ['Sugars (g)', ...ingredients.map(i => i.nutriments.sugars.toString())],
+    ['Calories (kcal / 100g/ml)', ...ingredients.map(i => (i.nutriments?.calories ?? 0).toString())],
+    ['Total Fat (g)', ...ingredients.map(i => (i.nutriments?.totalFat ?? 0).toString())],
+    ['Saturated Fat (g)', ...ingredients.map(i => (i.nutriments?.saturatedFat ?? 0).toString())],
+    ['Monounsaturated Fat (g)', ...ingredients.map(i => (i.nutriments?.monounsaturatedFat ?? 'N/A').toString())],
+    ['Polyunsaturated Fat (g)', ...ingredients.map(i => (i.nutriments?.polyunsaturatedFat ?? 'N/A').toString())],
+    ['Protein (g)', ...ingredients.map(i => (i.nutriments?.protein ?? 0).toString())],
+    ['Fiber (g)', ...ingredients.map(i => (i.nutriments?.fiber ?? 0).toString())],
+    ['Sodium (mg)', ...ingredients.map(i => (i.nutriments?.sodium ?? 0).toString())],
+    ['Sugars (g)', ...ingredients.map(i => (i.nutriments?.sugars ?? 0).toString())],
     ['Clean Label (Zero Additives)', ...ingredients.map(i => i.cleanLabel ? 'YES' : 'NO')],
-    ['Additives', ...ingredients.map(i => i.additives.length > 0 ? `"${i.additives.join(', ')}"` : 'None')],
+    ['Additives', ...ingredients.map(i => (i.additives || []).length > 0 ? `"${(i.additives || []).join(', ')}"` : 'None')],
     ['Current Store Price', ...ingredients.map(i => {
-      const price = customPrices[i.id] || i.basePrice;
+      const price = customPrices?.[i.id] || i.basePrice || { currency: '₹', amount: 100, unitQuantity: 1000, unitType: 'g' };
       return `"${price.currency}${price.amount} for ${price.unitQuantity}${price.unitType}"`;
     })],
     ['True Cost per 100g / 100ml', ...ingredients.map(i => {
-      const price = customPrices[i.id] || i.basePrice;
+      const price = customPrices?.[i.id] || i.basePrice || { currency: '₹', amount: 100, unitQuantity: 1000, unitType: 'g' };
       const costPer100 = (price.amount / (price.unitQuantity || 1)) * 100;
       return `"${price.currency}${costPer100.toFixed(2)}"`;
     })],
