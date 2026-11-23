@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { PantryProvider, usePantry } from './context/PantryContext';
-import { AuthProvider } from './context/AuthContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import { ToastProvider, useToast } from './context/ToastContext';
 import { Ingredient } from './types/ingredient';
 import { searchIngredients } from './services/ingredientService';
@@ -20,8 +20,19 @@ import { AppPreloader } from './components/AppPreloader';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 
 const AppContent: React.FC = () => {
-  const { customPrices, comparedItems } = usePantry();
+  const { customPrices, comparedItems, setIsAuthModalOpen } = usePantry();
+  const { user } = useAuth();
   const { showToast } = useToast();
+
+  // Prompt new users to log in when they arrive at the website
+  useEffect(() => {
+    if (!user) {
+      const timer = setTimeout(() => {
+        setIsAuthModalOpen(true);
+      }, 700);
+      return () => clearTimeout(timer);
+    }
+  }, [user, setIsAuthModalOpen]);
 
   // Search & Filtering State
   const [searchQuery, setSearchQuery] = useState('');

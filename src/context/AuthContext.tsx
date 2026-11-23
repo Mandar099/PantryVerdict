@@ -15,6 +15,8 @@ interface AuthContextType {
   ) => Promise<{ success: boolean; error?: string }>;
   loginCurator: () => void;
   loginDemo: () => void;
+  loginWithGoogle: () => void;
+  loginWithApple: () => void;
   continueAsGuest: () => void;
   logout: () => void;
   updateGoals: (goals: KitchenDietaryGoal[]) => void;
@@ -153,6 +155,48 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     loginCurator();
   };
 
+  const loginWithGoogle = () => {
+    const googleUser: UserProfile = {
+      id: `google-${Date.now()}`,
+      email: 'alex.chen@gmail.com',
+      displayName: 'Alex Chen',
+      memberTier: 'member',
+      createdAt: new Date().toISOString(),
+      kitchenGoals: ['heart_health', 'unrefined_only', 'high_protein'],
+      savedBoards: [
+        {
+          id: `board-${Date.now()}`,
+          title: 'Google Pantry Sync',
+          date: new Date().toLocaleDateString(),
+          ingredientIds: ['oil-evoo-cold-pressed', 'oil-mustard-kachi-ghani'],
+        },
+      ],
+      customNotes: {},
+    };
+    setUser(googleUser);
+  };
+
+  const loginWithApple = () => {
+    const appleUser: UserProfile = {
+      id: `apple-${Date.now()}`,
+      email: 'sam.taylor@privaterelay.appleid.com',
+      displayName: 'Sam Taylor',
+      memberTier: 'member',
+      createdAt: new Date().toISOString(),
+      kitchenGoals: ['unrefined_only', 'low_glycemic'],
+      savedBoards: [
+        {
+          id: `board-${Date.now()}`,
+          title: 'Apple Health Kitchen Sync',
+          date: new Date().toLocaleDateString(),
+          ingredientIds: ['sweet-raw-unfiltered-honey', 'ghee-a2-desi-cow-bilona'],
+        },
+      ],
+      customNotes: {},
+    };
+    setUser(appleUser);
+  };
+
   const continueAsGuest = () => {
     const guestUser: UserProfile = {
       id: `guest-${Date.now()}`,
@@ -207,6 +251,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         register,
         loginCurator,
         loginDemo,
+        loginWithGoogle,
+        loginWithApple,
         continueAsGuest,
         logout,
         updateGoals,
