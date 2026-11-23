@@ -1,0 +1,241 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-alabaster: #FAF8F5;
+  --text-castiron: #18181B;
+  --hairline-stone: #E2DDD5;
+  --accent-olive: #2D5A27;
+  --highlight-turmeric: #D97706;
+  --warning-terracotta: #C2410C;
+}
+
+body {
+  background-color: var(--bg-alabaster);
+  color: var(--text-castiron);
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Editorial Serif & Mono Utility Classes */
+.font-editorial {
+  font-family: 'Fraunces', Georgia, serif;
+  font-optical-sizing: auto;
+}
+
+.font-tabular {
+  font-family: 'JetBrains Mono', monospace;
+  font-feature-settings: 'tnum' on, 'zero' on;
+}
+
+/* Hairline Grid & Bento Borders */
+.hairline-border {
+  border: 1px solid var(--hairline-stone);
+}
+
+.hairline-b {
+  border-bottom: 1px solid var(--hairline-stone);
+}
+
+.hairline-t {
+  border-top: 1px solid var(--hairline-stone);
+}
+
+.hairline-r {
+  border-right: 1px solid var(--hairline-stone);
+}
+
+.hairline-l {
+  border-left: 1px solid var(--hairline-stone);
+}
+
+/* Spring Physics Micro-Interactions */
+.spring-hover {
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.spring-hover:hover {
+  transform: translateY(-2px);
+}
+
+.spring-hover:active {
+  transform: translateY(0);
+}
+
+/* Custom Editorial Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #FAF8F5;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #D4CEBF;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #A8A29E;
+}
+
+/* Reduced Motion Safety */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-6px); }
+  40%, 80% { transform: translateX(6px); }
+}
+
+.animate-shake {
+  animation: shake 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ========================================================= */
+/* PRINT OPTIMIZATION & ZERO-DUPLICATE 1-PAGE ENGINE         */
+/* ========================================================= */
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 8mm 10mm;
+  }
+
+  html,
+  body {
+    background: #FAF8F5 !important;
+    color: #18181B !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+    font-size: 10pt !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* 1. When comparison matrix is open, hide ALL website background content */
+  body.comparison-matrix-open #root > div > *:not(.comparison-matrix-overlay),
+  body.comparison-matrix-open header,
+  body.comparison-matrix-open footer,
+  body.comparison-matrix-open main,
+  body.comparison-matrix-open .comparison-dock,
+  body.comparison-matrix-open .qa-drawer,
+  body.comparison-matrix-open .pantry-drawer,
+  body.comparison-matrix-open .auth-modal,
+  body.comparison-matrix-open .app-preloader,
+  body.comparison-matrix-open .toast-container,
+  body.comparison-matrix-open #root > div > div > header,
+  body.comparison-matrix-open #root > div > div > section,
+  body.comparison-matrix-open #root > div > div > main {
+    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    max-height: 0 !important;
+    overflow: hidden !important;
+  }
+
+  /* 2. Reset the modal overlay from fixed viewport to static flow */
+  .comparison-matrix-overlay {
+    position: static !important;
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+    background: transparent !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    inset: auto !important;
+  }
+
+  /* 3. Reset the modal card to static inline flow */
+  .comparison-matrix-modal {
+    position: static !important;
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    box-shadow: none !important;
+    border: 1px solid #E5E0D8 !important;
+    border-radius: 8px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #FAF8F5 !important;
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+  }
+
+  /* 4. Reset scrollable body container */
+  .comparison-matrix-scroll-body {
+    overflow: visible !important;
+    max-height: none !important;
+    height: auto !important;
+    padding: 8px 12px !important;
+  }
+
+  /* 5. Hide buttons, close icons, interactive dropdowns */
+  .print-hide,
+  .no-print,
+  button,
+  select,
+  .mobile-column-switcher {
+    display: none !important;
+  }
+
+  /* 6. Enforce compact table layout that fits on 1 page */
+  table {
+    width: 100% !important;
+    table-layout: fixed !important;
+    page-break-inside: auto !important;
+    break-inside: auto !important;
+  }
+
+  tr {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  th,
+  td {
+    padding: 4px 6px !important;
+    font-size: 8.5pt !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  /* 7. General print utility classes */
+  .print-only,
+  .print\:block {
+    display: block !important;
+  }
+
+  .print\:flex {
+    display: flex !important;
+  }
+
+  .print\:hidden {
+    display: none !important;
+  }
+}
